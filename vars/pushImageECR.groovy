@@ -7,20 +7,36 @@
  * @param imageName Full ECR image name (e.g. 123456789.dkr.ecr.us-east-1.amazonaws.com/ivolve-app:42)
  * @param region    AWS region (optional, defaults to us-east-1)
  */
-def call(String imageName, String region = 'us-east-1') {
-    echo "============================================"
-    echo "Stage: PushImageECR"
-    echo "============================================"
+stage('PushImage') {
+    steps {
+        script {
+            echo "============================================"
+            echo "Stage: PushImageECR"
+            echo "============================================"
 
-    script {
-        def registry = (imageName =~ /^([^\/]+)/)[0][1]
-        echo "Logging into ECR: ${registry}"
-        sh """
-            aws ecr get-login-password --region ${region} | docker login --username AWS --password-stdin ${registry}
-        """
-        echo "Pushing image: ${imageName}"
-        sh "docker push ${imageName}"
+            withCredentials([
+                string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+                string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
+            ]) {
+
+                sh '''
+                    echo "Configuring AWS credentials..."
+
+                    aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+                    aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+                    aws configure set region us-east-1
+
+                    echo "Logging into ECR..."
+
+                    aws ecr get-login-password --region us-east-1 \
+                    | docker login --username AWS --password-stdin 532334935385.dkr.ecr.us-east-1.amazonaws.com
+
+                    echo "Pushing image..."
+
+                    docker push 532334935385.dkr.ecr.us-east-1.amazonaws.com/depi:4
+                    docker push 532334935385.dkr.ecr.us-east-1.amazonaws.com/depi:latest
+                '''
+            }
+        }
     }
-
-    echo "Push image stage completed"
 }
