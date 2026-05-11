@@ -8,16 +8,26 @@
  * @param region    AWS region (optional, defaults to us-east-1)
  */
 def call(String imageName, String region = 'us-east-1') {
+
     echo "============================================"
     echo "Stage: PushImageECR"
     echo "============================================"
 
     script {
-        def registry = (imageName =~ /^([^\/]+)/)[0][1]
+        def registry = imageName.split('/')[0]
         echo "Logging into ECR: ${registry}"
-        sh """
-            aws ecr get-login-password --region ${region} | docker login --username AWS --password-stdin ${registry}
-        """
+
+        withCredentials([
+            [$class: 'AmazonWebServicesCredentialsBinding',
+             credentialsId: 'aws-credentials-id']
+        ]) {
+
+            sh """
+                aws ecr get-login-password --region ${region} \
+                | docker login --username AWS --password-stdin ${registry}
+            """
+        }
+
         echo "Pushing image: ${imageName}"
         sh "docker push ${imageName}"
     }
