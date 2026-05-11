@@ -1,14 +1,4 @@
-#!/usr/bin/env groovy
-
-/**
- * Shared Library Function: PushImageECR
- * Logs into AWS ECR, tags the image if needed, and pushes to ECR.
- *
- * @param imageName Full ECR image name (e.g. 123456789.dkr.ecr.us-east-1.amazonaws.com/ivolve-app:42)
- * @param region    AWS region (optional, defaults to us-east-1)
- */
 def call(String imageName, String region = 'us-east-1') {
-
     echo "============================================"
     echo "Stage: PushImageECR"
     echo "============================================"
@@ -18,11 +8,13 @@ def call(String imageName, String region = 'us-east-1') {
         echo "Logging into ECR: ${registry}"
 
         withCredentials([
-            [$class: 'AmazonWebServicesCredentialsBinding',
-             credentialsId: 'aws-credentials-id']
+            string(credentialsId: 'AWS_ACCESS_KEY_ID', variable: 'AWS_ACCESS_KEY_ID'),
+            string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')
         ]) {
 
             sh """
+                AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+                AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
                 aws ecr get-login-password --region ${region} \
                 | docker login --username AWS --password-stdin ${registry}
             """
